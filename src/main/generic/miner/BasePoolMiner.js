@@ -5,6 +5,7 @@
 class BasePoolMiner extends Miner {
     /**
      * @param {BasePoolMiner.Mode} mode
+     * @param {object} nativeMiner
      * @param {BaseChain} blockchain
      * @param {Accounts} accounts
      * @param {Mempool} mempool
@@ -14,8 +15,8 @@ class BasePoolMiner extends Miner {
      * @param {?object} deviceData
      * @param {Uint8Array} [extraData=new Uint8Array(0)]
      */
-    constructor(mode, blockchain, accounts, mempool, time, address, deviceId, deviceData, extraData = new Uint8Array(0)) {
-        super(blockchain, accounts, mempool, time, address, extraData);
+    constructor(mode, nativeMiner, blockchain, accounts, mempool, time, address, deviceId, deviceData, extraData = new Uint8Array(0)) {
+        super(nativeMiner, blockchain, accounts, mempool, time, address, extraData);
 
         /** @type {Address} */
         this._ourAddress = address;

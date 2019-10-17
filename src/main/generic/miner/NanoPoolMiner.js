@@ -3,14 +3,15 @@
  */
 class NanoPoolMiner extends BasePoolMiner {
     /**
+     * @param {object} nativeMiner
      * @param {BaseChain} blockchain
      * @param {Time} time
      * @param {Address} address
      * @param {number} deviceId
      * @param {?object} deviceData
      */
-    constructor(blockchain, time, address, deviceId, deviceData) {
-        super(BasePoolMiner.Mode.NANO, blockchain, null, null, time, address, deviceId, deviceData);
+    constructor(nativeMiner, blockchain, time, address, deviceId, deviceData) {
+        super(BasePoolMiner.Mode.NANO, nativeMiner, blockchain, null, null, time, address, deviceId, deviceData);
 
         this.on('share', (block) => this._onBlockMined(block));
         this._shouldWork = false;

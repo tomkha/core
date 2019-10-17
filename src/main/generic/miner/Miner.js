@@ -3,6 +3,7 @@
  */
 class Miner extends Observable {
     /**
+     * @param {object} nativeMiner
      * @param {BaseChain} blockchain
      * @param {Accounts} accounts
      * @param {Mempool} mempool
@@ -13,7 +14,7 @@ class Miner extends Observable {
      * @listens Mempool#transaction-added
      * @listens Mempool#transaction-ready
      */
-    constructor(blockchain, accounts, mempool, time, minerAddress, extraData = new Uint8Array(0)) {
+    constructor(nativeMiner, blockchain, accounts, mempool, time, minerAddress, extraData = new Uint8Array(0)) {
         super();
         /** @type {BaseChain} */
         this._blockchain = blockchain;
@@ -88,14 +89,10 @@ class Miner extends Observable {
          */
         this._totalElapsed = 0;
 
-        /** @type {MinerWorkerPool} */
-        this._workerPool = new MinerWorkerPool();
-
-        const cores = PlatformUtils.hardwareConcurrency;
-        this.threads = Math.ceil(cores / 2);
-        if (cores === 1) this.throttleAfter = 2;
-        this._workerPool.on('share', (obj) => this.onWorkerShare(obj));
-        this._workerPool.on('no-share', (obj) => this.onWorkerShare(obj));
+        /**
+         * The native miner instance
+         */
+        this._nativeMiner = nativeMiner;
 
         /**
          * Flag indicating that the mempool has changed since we started mining the current block.
@@ -179,9 +176,33 @@ class Miner extends Observable {
                 return;
             }
 
-            Log.d(Miner, `Starting work on block #${block.header.height} / ${block.minerAddr.toUserFriendlyAddress()} / ${BufferUtils.toBase64(block.body.extraData)} with ${block.isFull() ? block.transactionCount : '(set by pool)'} transactions (${this._hashrate} H/s)`);
+            if (block.isFull()) {
+                Log.d(Miner, `Starting work on block #${block.header.height} / {block.minerAddr.toUserFriendlyAddress()} / ${BufferUtils.toBase64(block.body.extraData)} with ${block.transactionCount} transactions (${this._hashrate} H/s)`);
+            } else {
+                Log.d(Miner, `Starting work on block #${block.header.height} from pool (${this._hashrate} H/s)`);
+            }
 
-            this._workerPool.startMiningOnBlock(block, this._shareCompactSet ? this._shareCompact : undefined).catch(Log.w.tag(Miner));
+            this._nativeMiner.setShareCompact(this._shareCompactSet ? this._shareCompact : block.nBits);
+
+            this._nativeMiner.startMiningOnBlock(block.header.serialize(), async (error, obj) => {
+                if (error) {
+                    throw error;
+                }
+                if (obj.done === true) {
+                    return;
+                }
+                const { nonce, noncesPerRun, device, thread } = obj;
+                if (nonce > 0) {
+                    const blockHeader = block.header.serialize();
+                    blockHeader.writePos -= 4;
+                    blockHeader.writeUint32(obj.nonce);
+                    const hash = await (await CryptoWorker.getInstanceAsync()).computeArgon2d(blockHeader);
+                    this.onWorkerShare({ hash: new Hash(hash), nonce, block, noncesPerRun, device, thread });
+                } else {
+                    this.onWorkerShare({ nonce, noncesPerRun, device, thread });
+                }
+            });
+
         } catch (e) {
             Log.e(Miner, e);
             Log.w(Miner, 'Failed to start work, retrying in 100ms');
@@ -193,10 +214,10 @@ class Miner extends Observable {
     }
 
     /**
-     * @param {{hash: Hash, nonce: number, block: Block}} obj
+     * @param {{hash: Hash, nonce: number, block: Block, noncesPerRun: number, device: number, thread: number}} obj
      */
     async onWorkerShare(obj) {
-        this._hashCount += this._workerPool.noncesPerRun;
+        this._hashCount += obj.noncesPerRun;
         if (obj.block && obj.block.prevHash.equals(this._blockchain.headHash)) {
             Log.d(Miner, () => `Received share: ${obj.nonce} / ${obj.hash.toHex()}`);
             if (!this._submittingBlock) {
@@ -275,7 +296,7 @@ class Miner extends Observable {
         this._totalElapsed = 0;
 
         // Tell listeners that we've stopped working.
-        this._workerPool.stop();
+        this._nativeMiner.stop();
         this.fire('stop', this);
 
         Log.d(Miner, 'Stopped work');
@@ -348,42 +369,6 @@ class Miner extends Observable {
     /** @type {number} */
     get hashrate() {
         return this._hashrate;
-    }
-
-    /** @type {number} */
-    get threads() {
-        return this._workerPool.poolSize;
-    }
-
-    /**
-     * @param {number} threads
-     */
-    set threads(threads) {
-        this._workerPool.poolSize = threads;
-    }
-
-    /** @type {number} */
-    get throttleWait() {
-        return this._workerPool.cycleWait;
-    }
-
-    /**
-     * @param {number} throttleWait
-     */
-    set throttleWait(throttleWait) {
-        this._workerPool.cycleWait = throttleWait;
-    }
-
-    /** @type {number} */
-    get throttleAfter() {
-        return this._workerPool.runsPerCycle;
-    }
-
-    /**
-     * @param {number} throttleAfter
-     */
-    set throttleAfter(throttleAfter) {
-        this._workerPool.runsPerCycle = throttleAfter;
     }
 
     /** @type {Uint8Array} */

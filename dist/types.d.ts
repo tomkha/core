@@ -4111,13 +4111,11 @@ export class Miner extends Observable {
     public address: Address;
     public working: boolean;
     public hashrate: number;
-    public threads: number;
-    public throttleWait: number;
-    public throttleAfter: number;
     public extraData: Uint8Array;
     public shareCompact: number;
     public numBlocksMined: number;
     constructor(
+        nativeMiner: object,
         blockchain: BaseChain,
         accounts: Accounts,
         mempool: Mempool,
@@ -4152,6 +4150,7 @@ export abstract class BasePoolMiner extends Miner {
     public address: Address;
     constructor(
         mode: BasePoolMiner.Mode,
+        nativeMiner: object,
         blockchain: BaseChain,
         accounts: Accounts,
         mempool: Mempool,
@@ -4184,6 +4183,7 @@ export namespace BasePoolMiner {
 
 export class SmartPoolMiner extends BasePoolMiner {
     constructor(
+        nativeMiner: object,
         blockchain: BaseChain,
         accounts: Accounts,
         mempool: Mempool,
@@ -4197,6 +4197,7 @@ export class SmartPoolMiner extends BasePoolMiner {
 
 export class NanoPoolMiner extends BasePoolMiner {
     constructor(
+        nativeMiner: object,
         blockchain: BaseChain,
         time: Time,
         address: Address,
