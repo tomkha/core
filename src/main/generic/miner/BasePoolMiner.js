@@ -86,6 +86,9 @@ class BasePoolMiner extends Miner {
             mode: this.mode,
             address: this._ourAddress.toUserFriendlyAddress(),
             deviceId: this._deviceId,
+            deviceName: this._deviceData ? this._deviceData.deviceName : undefined,
+            startDifficulty: this._deviceData ? this._deviceData.startDifficulty : undefined,
+            minerVersion: this._deviceData ? this._deviceData.minerVersion : undefined,
             deviceData: this._deviceData,
             genesisHash: BufferUtils.toBase64(GenesisConfig.GENESIS_HASH.serialize())
         });

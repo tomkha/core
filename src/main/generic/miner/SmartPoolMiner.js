@@ -14,7 +14,7 @@ class SmartPoolMiner extends BasePoolMiner {
      * @param {Uint8Array} [extraData=new Uint8Array(0)]
      */
     constructor(nativeMiner, blockchain, accounts, mempool, time, address, deviceId, deviceData, extraData = new Uint8Array(0)) {
-        super(BasePoolMiner.Mode.SMART, nativeMiner, blockchain, accounts, mempool, time, address, deviceId, extraData);
+        super(BasePoolMiner.Mode.SMART, nativeMiner, blockchain, accounts, mempool, time, address, deviceId, deviceData, extraData);
 
         this.on('share', (block, fullValid) => this._onBlockMined(block, fullValid));
     }
