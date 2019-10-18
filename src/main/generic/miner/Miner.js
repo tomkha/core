@@ -177,29 +177,23 @@ class Miner extends Observable {
             }
 
             if (block.isFull()) {
-                Log.d(Miner, `Starting work on block #${block.header.height} / {block.minerAddr.toUserFriendlyAddress()} / ${BufferUtils.toBase64(block.body.extraData)} with ${block.transactionCount} transactions (${this._hashrate} H/s)`);
+                Log.d(Miner, `Starting work on block #${block.header.height} / ${block.minerAddr.toUserFriendlyAddress()} / ${BufferUtils.toBase64(block.body.extraData)} with ${block.transactionCount} transactions (${this._hashrate} H/s)`);
             } else {
                 Log.d(Miner, `Starting work on block #${block.header.height} from pool (${this._hashrate} H/s)`);
             }
 
             this._nativeMiner.setShareCompact(this._shareCompactSet ? this._shareCompact : block.nBits);
 
-            this._nativeMiner.startMiningOnBlock(block.header.serialize(), async (error, obj) => {
-                if (error) {
-                    throw error;
-                }
-                if (obj.done === true) {
-                    return;
-                }
-                const { nonce, noncesPerRun, device, thread } = obj;
+            this._nativeMiner.startMiningOnBlock(block.header, async obj => {
+                const { nonce, noncesPerRun } = obj;
                 if (nonce > 0) {
                     const blockHeader = block.header.serialize();
                     blockHeader.writePos -= 4;
-                    blockHeader.writeUint32(obj.nonce);
+                    blockHeader.writeUint32(nonce);
                     const hash = await (await CryptoWorker.getInstanceAsync()).computeArgon2d(blockHeader);
-                    this.onWorkerShare({ hash: new Hash(hash), nonce, block, noncesPerRun, device, thread });
+                    this.onWorkerShare({ hash: new Hash(hash), nonce, block, noncesPerRun });
                 } else {
-                    this.onWorkerShare({ nonce, noncesPerRun, device, thread });
+                    this.onWorkerShare({ nonce, noncesPerRun });
                 }
             });
 
@@ -214,7 +208,7 @@ class Miner extends Observable {
     }
 
     /**
-     * @param {{hash: Hash, nonce: number, block: Block, noncesPerRun: number, device: number, thread: number}} obj
+     * @param {{hash: Hash, nonce: number, block: Block, noncesPerRun: number}} obj
      */
     async onWorkerShare(obj) {
         this._hashCount += obj.noncesPerRun;
