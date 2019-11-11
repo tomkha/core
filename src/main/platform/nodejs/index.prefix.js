@@ -5,6 +5,7 @@ const JDB = require('@nimiq/jungle-db');
 const fs = require('fs');
 const https = require('https');
 const http = require('http');
+const tls = require('tls');
 const chalk = require('chalk');
 
 // Allow the user to specify the WebSocket engine through an environment variable. Default to ws
