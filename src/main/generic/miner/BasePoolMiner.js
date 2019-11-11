@@ -173,6 +173,7 @@ class BasePoolMiner extends Miner {
                         break;
                     case 'error':
                         Log.w(BasePoolMiner, 'Error from pool:', msg.reason);
+                        super.numErrors++;
                         break;
                 }
             } else {

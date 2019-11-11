@@ -118,6 +118,10 @@ class Miner extends Observable {
 
         /** @type {number} */
         this._numBlocksMined = 0;
+        /** @type {number} */
+        this._numShares = 0;
+        /** @type {number} */
+        this._numErrors = 0;
 
         /** @type {boolean} */
         this._activeConfigChanges = false;
@@ -217,6 +221,7 @@ class Miner extends Observable {
             if (!this._submittingBlock) {
                 obj.block.header.nonce = obj.nonce;
 
+                this._numShares++;
                 let blockValid = false;
                 if (obj.block.isFull() && BlockUtils.isProofOfWork(obj.hash, obj.block.target)) {
                     this._submittingBlock = true;
@@ -236,6 +241,7 @@ class Miner extends Observable {
                             this._submittingBlock = false;
                         }
                     } else {
+                        this._numErrors++;
                         Log.d(Miner, `Ignoring invalid share: ${await obj.block.header.pow()}`);
                     }
                 }
@@ -404,6 +410,22 @@ class Miner extends Observable {
     get numBlocksMined() {
         return this._numBlocksMined;
     }
+
+    /** @type {number} */
+    get numShares() {
+        return this._numShares;
+    }
+
+    /** @type {number} */
+    get numErrors() {
+        return this._numErrors;
+    }
+
+    /** @type {number} */
+    set numErrors(errors) {
+        this._numErrors = errors;
+    }
+
 }
 
 Miner.MIN_TIME_ON_BLOCK = 10000;
