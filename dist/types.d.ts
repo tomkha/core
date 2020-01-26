@@ -1,4 +1,4 @@
-export function load(): Promise<void>;
+export function load(path?: string): Promise<void>;
 
 export let _path: string | undefined;
 
@@ -10,11 +10,11 @@ export class Class {
 /* Client API */
 
 declare type Handle = number;
-declare type BlockListener = (blockHash: Hash) => Promise<void> | void;
-declare type ConsensusChangedListener = (consensusState: Client.ConsensusState) => Promise<void> | void;
-declare type HeadChangedListener = (blockHash: Hash, reason: string, revertedBlocks: Hash[], adoptedBlocks: Hash[]) => Promise<void> | void;
-declare type TransactionListener = (transaction: Client.TransactionDetails) => Promise<void> | void;
-declare type MempoolListener = (transactionHash: Hash) => Promise<void> | void;
+declare type BlockListener = (blockHash: Hash) => Promise<any> | any;
+declare type ConsensusChangedListener = (consensusState: Client.ConsensusState) => Promise<any> | any;
+declare type HeadChangedListener = (blockHash: Hash, reason: string, revertedBlocks: Hash[], adoptedBlocks: Hash[]) => Promise<any> | any;
+declare type TransactionListener = (transaction: Client.TransactionDetails) => Promise<any> | any;
+declare type MempoolListener = (transactionHash: Hash) => Promise<any> | any;
 
 export class Client {
     public static Configuration: typeof ClientConfiguration;
@@ -62,7 +62,7 @@ export class Client {
     public getTransactionReceipt(hash: Hash | string): Promise<TransactionReceipt | undefined>;
     public getTransactionReceiptsByAddress(address: Address | string, limit?: number): Promise<TransactionReceipt[]>;
     public getTransactionReceiptsByHashes(hashes: Array<Hash | string>): Promise<TransactionReceipt[]>;
-    public getTransactionsByAddress(address: Address | string, sinceBlockHeight?: number, knownTransactionDetails?: Client.TransactionDetails[], limit?: number): Promise<Client.TransactionDetails[]>;
+    public getTransactionsByAddress(address: Address | string, sinceBlockHeight?: number, knownTransactionDetails?: Client.TransactionDetails[] | ReturnType<Client.TransactionDetails["toPlain"]>[], limit?: number): Promise<Client.TransactionDetails[]>;
     public sendTransaction(tx: Transaction | object | string): Promise<Client.TransactionDetails>;
     public addBlockListener(listener: BlockListener): Promise<Handle>;
     public addConsensusChangedListener(listener: ConsensusChangedListener): Promise<Handle>;

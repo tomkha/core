@@ -278,7 +278,7 @@ class JsonRpcServer {
             const liveTx = await this._getTransactionByHash(tx.hash());
             if (liveTx) {
                 liveTx.valid = true;
-                liveTx.inMempool = (liveTx.confirmations === 0);
+                liveTx.inMempool = !liveTx.confirmations;
                 return liveTx;
             }
         } catch (e) {
@@ -324,7 +324,7 @@ class JsonRpcServer {
         const block = await this._client.getBlock(receipt.blockHash);
         return {
             transactionHash: receipt.transactionHash.toHex(),
-            transactionIndex: block ? block.transactions.findIndex(tx => tx.hash().equals(hash)) : undefined,
+            transactionIndex: block ? block.transactions.findIndex(tx => tx.hash().toHex() === hash) : undefined,
             blockNumber: receipt.blockHeight,
             blockHash: receipt.blockHash.toHex(),
             confirmations: (await this._client.getHeadHeight()) - receipt.blockHeight,

@@ -19,3 +19,4 @@ global.Class = {
 };
 
 const NodeNative = require('bindings')('nimiq_node.node');
+
