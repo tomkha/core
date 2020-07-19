@@ -1,6 +1,6 @@
 class BufferUtils {
     /**
-     * @param {*} buffer
+     * @param {Uint8Array} buffer
      * @return {string}
      */
     static toAscii(buffer) {
@@ -39,8 +39,14 @@ class BufferUtils {
         }
         const uint8View = BufferUtils._toUint8View(buffer);
         return BufferUtils._ISO_8859_15_DECODER.decode(uint8View)
-            .replace('€', '¤').replace('Š', '¦').replace('š', '¨').replace('Ž', '´')
-            .replace('ž', '¸').replace('Œ', '¼').replace('œ', '½').replace('Ÿ', '¾');
+            .replace(/\u20ac/g, '\u00a4')  // € => ¤
+            .replace(/\u0160/g, '\u00a6')  // Š => ¦
+            .replace(/\u0161/g, '\u00a8')  // š => ¨
+            .replace(/\u017d/g, '\u00b4')  // Ž => ´
+            .replace(/\u017e/g, '\u00b8')  // ž => ¸
+            .replace(/\u0152/g, '\u00bc')  // Œ => ¼
+            .replace(/\u0153/g, '\u00bd')  // œ => ½
+            .replace(/\u0178/g, '\u00be'); // Ÿ => ¾
     }
 
     static _tripletToBase64(num) {
@@ -90,7 +96,7 @@ class BufferUtils {
     }
 
     /**
-     * @param {*} buffer
+     * @param {Uint8Array} buffer
      * @return {string}
      */
     static toBase64(buffer) {
@@ -113,13 +119,13 @@ class BufferUtils {
      * @return {SerialBuffer}
      */
     static fromBase64(base64, length) {
-        const arr = Uint8Array.from(atob(base64), c => c.charCodeAt(0));
+        const arr = new Uint8Array(atob(base64).split('').map(c => c.charCodeAt(0)));
         if (length !== undefined && arr.length !== length) throw new Error('Decoded length does not match expected length');
         return new SerialBuffer(arr);
     }
 
     /**
-     * @param {*} buffer
+     * @param {Uint8Array} buffer
      * @return {string}
      */
     static toBase64Url(buffer) {
@@ -210,7 +216,7 @@ class BufferUtils {
     }
 
     /**
-     * @param {*} buffer
+     * @param {Uint8Array} buffer
      * @return {string}
      */
     static toHex(buffer) {
@@ -231,11 +237,11 @@ class BufferUtils {
     static fromHex(hex, length) {
         hex = hex.trim();
         if (!StringUtils.isHexBytes(hex, length)) throw new Error('String is not an hex string (of matching length)');
-        return new SerialBuffer(Uint8Array.from(hex.match(/.{2}/g) || [], byte => parseInt(byte, 16)));
+        return new SerialBuffer(new Uint8Array((hex.match(/.{2}/g) || []).map(byte => parseInt(byte, 16))));
     }
 
     /**
-     * @param {*} bytes
+     * @param {Uint8Array} buffer
      * @return {string}
      */
     static toBinary(buffer) {
@@ -355,14 +361,14 @@ class BufferUtils {
     }
 
     /**
-     * @param {*} a
-     * @param {*} b
+     * @param {TypedArray} a
+     * @param {TypedArray} b
      * @return {boolean}
      */
     static equals(a, b) {
-        if ((a.byteLength || a.length) !== (b.byteLength || b.length)) return false;
         const viewA = BufferUtils._toUint8View(a);
         const viewB = BufferUtils._toUint8View(b);
+        if (viewA.length !== viewB.length) return false;
         for (let i = 0; i < viewA.length; i++) {
             if (viewA[i] !== viewB[i]) return false;
         }
@@ -370,8 +376,8 @@ class BufferUtils {
     }
 
     /**
-     * @param {*} a
-     * @param {*} b
+     * @param {TypedArray} a
+     * @param {TypedArray} b
      * @return {number} -1 if a is smaller than b, 1 if a is larger than b, 0 if a equals b.
      */
     static compare(a, b) {
@@ -398,19 +404,19 @@ class BufferUtils {
     }
 
     /**
-     * @param {*} arrayLike
+     * @param {TypedArray|ArrayBuffer} arrayLike
      * @return {Uint8Array}
      * @private
      */
     static _toUint8View(arrayLike) {
         if (arrayLike instanceof Uint8Array) {
             return arrayLike;
-        } if (arrayLike instanceof ArrayBuffer) {
+        } else if (arrayLike instanceof ArrayBuffer) {
             return new Uint8Array(arrayLike);
         } else if (arrayLike.buffer instanceof ArrayBuffer) {
             return new Uint8Array(arrayLike.buffer);
         } else {
-            return Uint8Array.from(arrayLike);
+            throw new Error('TypedArray or ArrayBuffer required');
         }
     }
 }
