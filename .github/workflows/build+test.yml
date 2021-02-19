@@ -1,0 +1,109 @@
+name: Build + Test
+
+on:
+  - push
+  - pull_request
+
+jobs:
+  test_node:
+    runs-on: ubuntu-20.04
+    strategy:
+      matrix:
+        node: [ '14' ]
+    name: Test on node v${{ matrix.node }}
+    steps:
+    - uses: actions/checkout@v2
+    - uses: actions/setup-node@v2
+      with:
+        node-version: ${{ matrix.node }}
+    - uses: actions/cache@v2
+      with:
+        path: ~/.cache/yarn/
+        key: ${{ runner.os }}-yarn-node${{ matrix.node }}-${{ hashFiles('**/yarn.lock') }}
+    - name: Install
+      run: yarn
+    - name: Lint
+      run: yarn lint
+    - name: Lint Types
+      run: yarn lint-types
+    - name: Test Node
+      run: yarn test-node
+
+  test_chrome:
+    runs-on: ubuntu-20.04
+    strategy:
+      matrix:
+        chrome: [ 'stable', 'beta' ]
+    name: Test on Chrome (${{ matrix.chrome }})
+    steps:
+    - uses: actions/checkout@v2
+    - uses: actions/setup-node@v2
+      with:
+        node-version: '14'
+    - uses: browser-actions/setup-chrome@latest
+      with:
+        chrome-version: ${{ matrix.chrome }}
+    - uses: actions/cache@v2
+      with:
+        path: ~/.cache/yarn/
+        key: ${{ runner.os }}-yarn-node14-${{ hashFiles('**/yarn.lock') }}
+    - name: Install
+      run: yarn
+    - name: Build
+      run: yarn gulp build-web
+    - run: sudo apt-get install xvfb
+    - name: Get Version
+      run: chrome --version
+    - name: Test
+      run: KARMA_BROWSERS=Chrome xvfb-run --auto-servernum yarn test-browser
+
+  test_firefox:
+    runs-on: ubuntu-20.04
+    strategy:
+      matrix:
+        firefox: [ 'latest', 'latest-esr', 'latest-beta' ]
+    name: Test on Firefox (${{ matrix.firefox }})
+    steps:
+    - uses: actions/checkout@v2
+    - uses: actions/setup-node@v2
+      with:
+        node-version: '14'
+    - uses: browser-actions/setup-firefox@v0.0.0
+      with:
+        firefox-version: ${{ matrix.firefox }}
+    - uses: actions/cache@v2
+      with:
+        path: ~/.cache/yarn/
+        key: ${{ runner.os }}-yarn-node14-${{ hashFiles('**/yarn.lock') }}
+    - name: Install
+      run: yarn
+    - name: Build
+      run: yarn gulp build-web
+    - run: sudo apt-get install xvfb
+    - name: Get Version
+      run: firefox --version
+    - name: Test
+      run: KARMA_BROWSERS=Firefox xvfb-run --auto-servernum yarn test-browser
+
+  test_esm:
+    runs-on: ubuntu-20.04
+    strategy:
+      matrix:
+        browser: [ 'Chrome', 'Firefox' ]
+    name: Test ESM (${{ matrix.browser }})
+    steps:
+    - uses: actions/checkout@v2
+    - uses: actions/setup-node@v2
+      with:
+        node-version: '14'
+    - uses: actions/cache@v2
+      with:
+        path: ~/.cache/yarn/
+        key: ${{ runner.os }}-yarn-node14-${{ hashFiles('**/yarn.lock') }}
+    - name: Install
+      run: yarn
+    - name: Build
+      run: yarn gulp build-web-module
+    - run: sudo apt-get install xvfb
+    - name: Test
+      run: USE_ESM=1 KARMA_BROWSERS=${{ matrix.browser }} xvfb-run --auto-servernum yarn test-browser

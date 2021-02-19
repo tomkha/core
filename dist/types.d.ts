@@ -23,7 +23,7 @@ export class Client {
     public static MempoolStatistics: typeof ClientMempoolStatistics;
     public static Network: typeof ClientNetwork;
     public static BasicAddress: typeof ClientBasicAddress;
-    public static AddressInfo:typeof  ClientAddressInfo;
+    public static AddressInfo: typeof ClientAddressInfo;
     public static PeerInfo: typeof ClientPeerInfo;
     public static NetworkStatistics: typeof ClientNetworkStatistics;
     public static TransactionDetails: typeof ClientTransactionDetails;
@@ -48,6 +48,7 @@ export class Client {
     };
     public network: Client.Network;
     public mempool: Client.Mempool;
+    public _consensusState: Client.ConsensusState;
     constructor(config: Client.Configuration | object, consensus?: Promise<BaseConsensus>);
     public getHeadHash(): Promise<Hash>;
     public getHeadHeight(): Promise<number>;
@@ -62,7 +63,7 @@ export class Client {
     public getTransactionReceipt(hash: Hash | string): Promise<TransactionReceipt | undefined>;
     public getTransactionReceiptsByAddress(address: Address | string, limit?: number): Promise<TransactionReceipt[]>;
     public getTransactionReceiptsByHashes(hashes: Array<Hash | string>): Promise<TransactionReceipt[]>;
-    public getTransactionsByAddress(address: Address | string, sinceBlockHeight?: number, knownTransactionDetails?: Client.TransactionDetails[] | ReturnType<Client.TransactionDetails["toPlain"]>[], limit?: number): Promise<Client.TransactionDetails[]>;
+    public getTransactionsByAddress(address: Address | string, sinceBlockHeight?: number, knownTransactionDetails?: Client.TransactionDetails[] | Array<ReturnType<Client.TransactionDetails['toPlain']>>, limit?: number): Promise<Client.TransactionDetails[]>;
     public sendTransaction(tx: Transaction | object | string): Promise<Client.TransactionDetails>;
     public addBlockListener(listener: BlockListener): Promise<Handle>;
     public addConsensusChangedListener(listener: ConsensusChangedListener): Promise<Handle>;
@@ -70,7 +71,6 @@ export class Client {
     public addTransactionListener(listener: TransactionListener, addresses: Array<Address | string>): Promise<Handle>;
     public removeListener(handle: Handle): Promise<void>;
     public waitForConsensusEstablished(): Promise<void>;
-    public _consensusState: Client.ConsensusState;
 }
 
 export namespace Client {
@@ -175,6 +175,10 @@ declare class ClientAddressInfo extends ClientBasicAddress {
         peerAddress: string,
         peerId: string,
         services: string[],
+        netAddress: {
+            ip: Uint8Array,
+            reliable: boolean,
+        } | null,
         banned: boolean,
         connected: boolean,
     };
@@ -182,7 +186,6 @@ declare class ClientAddressInfo extends ClientBasicAddress {
 
 declare class ClientPeerInfo extends ClientBasicAddress {
     public connectionSince: number;
-    public netAddress: NetAddress;
     public bytesReceived: number;
     public bytesSent: number;
     public latency: number;
@@ -196,8 +199,11 @@ declare class ClientPeerInfo extends ClientBasicAddress {
         peerAddress: string,
         peerId: string,
         services: string[],
+        netAddress: {
+            ip: Uint8Array,
+            reliable: boolean,
+        } | null,
         connectionSince: number,
-        netAddress: string,
         bytesReceived: number,
         bytesSent: number,
         latency: number,
@@ -896,10 +902,10 @@ export class NumberUtils {
     public static UINT16_MAX: 65535;
     public static UINT32_MAX: 4294967295;
     public static UINT64_MAX: number;
-    public static isUint8(val: number): boolean;
-    public static isUint16(val: number): boolean;
-    public static isUint32(val: number): boolean;
-    public static isUint64(val: number): boolean;
+    public static isUint8(val: unknown): boolean;
+    public static isUint16(val: unknown): boolean;
+    public static isUint32(val: unknown): boolean;
+    public static isUint64(val: unknown): boolean;
     public static randomUint32(): number;
     public static randomUint64(): number;
     public static fromBinary(bin: string): number;
@@ -1015,6 +1021,7 @@ export class Hash extends Serializable {
         SHA256: 3;
         SHA512: 4;
         toString(hashAlgorithm: Hash.Algorithm): string;
+        fromString(str: string): Hash.Algorithm;
     };
     public static light(arr: Uint8Array): Hash;
     public static blake2b(arr: Uint8Array): Hash;
@@ -1384,7 +1391,33 @@ export class HashedTimeLockedContract extends Contract {
         hashCount: number,
         timeout: number,
     } | {};
-    public static proofToPlain(proof: Uint8Array): object;
+    public static proofToPlain(proof: Uint8Array): {
+        type: 'regular-transfer',
+        hashAlgorithm: string,
+        hashDepth: number,
+        hashRoot: string,
+        preImage: string,
+        signer: string,
+        signature: string,
+        publicKey: string,
+        pathLength: number,
+    } | {
+        type: 'early-resolve',
+        signer: string,
+        signature: string,
+        publicKey: string,
+        pathLength: number,
+        creator: string,
+        creatorSignature: string,
+        creatorPublicKey: string,
+        creatorPathLength: number,
+    } | {
+        type: 'timeout-resolve',
+        creator: string,
+        creatorSignature: string,
+        creatorPublicKey: string,
+        creatorPathLength: number,
+    } | {};
     public serializedSize: number;
     public sender: Address;
     public recipient: Address;
@@ -1408,6 +1441,7 @@ export class HashedTimeLockedContract extends Contract {
         balance: number,
         sender: string,
         recipient: string,
+        hashAlgorithm: string,
         hashRoot: string,
         hashCount: number,
         timeout: number,

@@ -57,6 +57,15 @@ class Client {
     }
 
     /**
+     * Resets the current consensus internal state
+     * @returns {Promise<void>}
+     */
+    resetConsensus() {
+        return this._consensusSynchronizer
+            .push(() => this._replaceConsensus(this._config.createConsensus()));
+    }
+
+    /**
      * Must be invoked in synchronizer
      * @private
      */
@@ -411,7 +420,7 @@ class Client {
         let fs = [];
         for (const {listener, addresses} of this._transactionListeners.values()) {
             if (addresses.contains(tx.sender) || addresses.contains(tx.recipient)) {
-                details = details || new Client.TransactionDetails(tx, Client.TransactionState.CONFIRMED, block.hash(), block.height, (blockNow.height - block.height) + 1, block.timestamp);
+                details = details || new Client.TransactionDetails(tx, Client.TransactionState.CONFIRMED, block.hash(), block.height, (blockNow.height - block.height) + this._config.requiredBlockConfirmations, block.timestamp);
                 fs.push(async () => {
                     try {
                         await listener(details);

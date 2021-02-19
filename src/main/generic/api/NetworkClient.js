@@ -165,7 +165,7 @@ Client.BasicAddress = class BasicAddress {
         return Services.toNameArray(Services.legacyProvideToCurrent(this._address.services));
     }
 
-    /** @type {NetAddress} */
+    /** @type {NetAddress | null} */
     get netAddress() {
         return this._address.netAddress;
     }
@@ -292,7 +292,6 @@ Client.PeerInfo = class PeerInfo extends Client.BasicAddress {
     toPlain() {
         const plain = super.toPlain();
         plain.connectionSince = this.connectionSince;
-        plain.netAddress = this.netAddress.toString();
         plain.bytesReceived = this.bytesReceived;
         plain.bytesSent = this.bytesSent;
         plain.latency = this.latency;

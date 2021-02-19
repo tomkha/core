@@ -276,6 +276,10 @@ const sources = {
         './src/main/generic/consensus/base/primitive/PartialSignature.js',
         './src/main/generic/consensus/base/account/Address.js',
         './src/main/generic/consensus/base/account/Account.js',
+        './src/main/generic/consensus/base/account/BasicAccount.js',
+        './src/main/generic/consensus/base/account/Contract.js',
+        './src/main/generic/consensus/base/account/HashedTimeLockedContract.js',
+        './src/main/generic/consensus/base/account/VestingContract.js',
         './src/main/generic/consensus/base/transaction/Transaction.js',
         './src/main/generic/consensus/base/transaction/SignatureProof.js',
         './src/main/generic/consensus/base/transaction/BasicTransaction.js',
@@ -620,7 +624,7 @@ const RELEASE_ADDONS = [
 gulp.task('eslint', function () {
     const eslint = require('gulp-eslint');
     return gulp.src(sources.all)
-        .pipe(eslint({quiet: true}))
+        .pipe(eslint())
         .pipe(eslint.format())
         .pipe(eslint.failAfterError());
 });
